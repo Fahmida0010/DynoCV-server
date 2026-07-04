@@ -1,0 +1,25 @@
+import { IsEmail, IsEnum, IsNotEmpty, IsString, MinLength } from 'class-validator';
+
+export enum AllowedRole {
+  CANDIDATE = 'CANDIDATE',
+  RECRUITER = 'RECRUITER',
+}
+
+export class RegisterDto {
+  @IsEmail({}, { message: 'Invalid email address' })
+  email: string;
+
+  @MinLength(6, { message: 'Password must be at least 6 characters long' })
+  password: string;
+
+  @IsString()
+  @IsNotEmpty({ message: 'First name is required' })
+  firstName: string;
+
+  @IsString()
+  @IsNotEmpty({ message: 'Last name is required' })
+  lastName: string;
+
+  @IsEnum(AllowedRole, { message: 'Please select a valid role' })
+  role: AllowedRole;
+}
