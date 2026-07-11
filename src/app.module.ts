@@ -3,9 +3,15 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
 import { PrismaModule } from './prisma/prisma.module';
+import { ConfigModule } from '@nestjs/config';
+
 
 @Module({
-  imports: [PrismaModule, AuthModule], //এই দুটি অবশ্যই এখানে থাকতে হবে
+
+  imports: [
+
+    ConfigModule.forRoot({ isGlobal: true }),
+    PrismaModule, AuthModule], //এই দুটি অবশ্যই এখানে থাকতে হবে
   controllers: [AppController],
   providers: [AppService],
 })
