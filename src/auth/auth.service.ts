@@ -12,6 +12,22 @@ export class AuthService {
     private jwtService: JwtService,
   ) {}
 
+  // নতুন মেথড
+  async findOneByEmail(email: string) {
+    return this.prisma.user.findUnique({
+      where: {
+        email: email,
+      },
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        email: true,
+        role: true, // এটি ফ্রন্টএন্ডের জন্য সবচেয়ে গুরুত্বপূর্ণ
+      },
+    });
+  }
+
   async register(dto: RegisterDto) {
     try {
       const userExists = await this.prisma.user.findUnique({
