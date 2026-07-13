@@ -1,4 +1,4 @@
-import { Controller, Post, Body, HttpCode, HttpStatus, Get, UseGuards, Req, Res } from '@nestjs/common';
+import { Controller, Post, Body, HttpCode, HttpStatus, Get, UseGuards, Req, Res, NotFoundException, Param } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import type { Response } from 'express';
 import { AuthService } from './auth.service';
@@ -9,6 +9,20 @@ import { LoginDto } from './dto/login.dto';
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
+
+
+// নতুন এন্ডপয়েন্ট যা আমরা যুক্ত করছি
+  @Get('users/:email') // এর ফলে ফুল পাথ হবে: /api/auth/users/:email
+  async getUserByEmail(@Param('email') email: string) {
+    const user = await this.authService.findOneByEmail(email);
+    
+    if (!user) {
+      throw new NotFoundException('User not found in database');
+    }
+    
+    return user;
+  }
+
 
   @Post('register')
   @HttpCode(HttpStatus.CREATED)
@@ -38,7 +52,7 @@ export class AuthController {
     
     
     const frontendUrl = process.env.CLIENT_URL || 'http://localhost:5173';
-      // return res.redirect(`${frontendUrl}/dashboard/profile`);
+      
 
       const userString = encodeURIComponent(JSON.stringify(result.user));
       return res.redirect(
@@ -61,7 +75,7 @@ export class AuthController {
     const result = await this.authService.validateSocialUser(req.user);
     
     const frontendUrl = process.env.CLIENT_URL || 'http://localhost:5173';
-    // return res.redirect(`${frontendUrl}/dashboard/profile`);
+  
 
     const userString = encodeURIComponent(JSON.stringify(result.user));
     return res.redirect(
