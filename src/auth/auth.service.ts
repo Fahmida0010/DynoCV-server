@@ -71,6 +71,8 @@ export class AuthService {
     }
   }
 
+
+
   async login(dto: LoginDto) {
     const user = await this.prisma.user.findUnique({
       where: { email: dto.email },
@@ -95,7 +97,14 @@ export class AuthService {
       user: userWithoutPassword,
     };
   }
-
+  
+async getUserByEmail(email: string) {
+  return this.prisma.user.findUnique({
+    where: {
+      email,
+    },
+  });
+}
 
 async validateSocialUser(socialUser: any) {
     try {
