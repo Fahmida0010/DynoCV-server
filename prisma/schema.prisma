@@ -36,10 +36,21 @@ model User {
 
   resetPasswordToken String?
 
+  isBlocked      Boolean      @default(false)
+
   createdAt DateTime @default(now())
 
   updatedAt DateTime @updatedAt
+  version        Int          @default(1) // For optimistic locking
+
+  //relation
   profile   Profile?
+  projects       Project[]
+  cvs            CV[]
+  userAttributes UserAttribute[]
+  discussions    Discussion[]
+  comments       Comment[]
+  likes          Like[]
 }
 
 model Profile {
@@ -51,4 +62,105 @@ model Profile {
   location  String?
   photoUrl  String?
   version   Int     @default(1) // Optimistic locking
+   updatedAt   DateTime? @updatedAt
+}
+
+model AttributeLibrary {
+  id             String          @id @default(uuid())
+  label          String          @unique
+  type           String // e.g., "TEXT", "NUMBER", "BOOLEAN"
+  isBuiltIn      Boolean         @default(false) // 'Me' section templates fields
+  userAttributes UserAttribute[]
+  templateFields TemplateField[]
+}
+
+model UserAttribute {
+  id          String           @id @default(uuid())
+  userId      String
+  user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  attributeId String
+  attribute   AttributeLibrary @relation(fields: [attributeId], references: [id], onDelete: Cascade)
+  value       String // Dynamic values stringified or plain text
+  version     Int              @default(1)
+
+  @@unique([userId, attributeId])
+}
+
+model Project {
+  id          String   @id @default(uuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name        String
+  startDate   DateTime
+  endDate     DateTime?
+  description String // Markdown supported text
+  tags        String[] // Technology tags
+  version     Int      @default(1)
+}
+
+model Position {
+  id           String          @id @default(uuid())
+  title        String
+  description  String
+  isActive     Boolean         @default(true)
+  version      Int             @default(1)
+  templates    TemplateField[]
+  cvs          CV[]
+  discussions  Discussion[]
+}
+
+model TemplateField {
+  id          String           @id @default(uuid())
+  positionId  String
+  position    Position         @relation(fields: [positionId], references: [id], onDelete: Cascade)
+  attributeId String
+  attribute   AttributeLibrary @relation(fields: [attributeId], references: [id], onDelete: Cascade)
+
+  @@unique([positionId, attributeId])
+}
+
+model CV {
+  id         String   @id @default(uuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  positionId String
+  position   Position @relation(fields: [positionId], references: [id], onDelete: Cascade)
+  content    Json // Automatically compiled standard & custom attribute snapshot
+  version    Int      @default(1)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([userId, positionId]) // Max 1 CV per position per candidate
+}
+
+model Discussion {
+  id         String    @id @default(uuid())
+  positionId String
+  position   Position  @relation(fields: [positionId], references: [id], onDelete: Cascade)
+  userId     String
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title      String
+  content    String
+  createdAt  DateTime  @default(now())
+  comments   Comment[]
+}
+
+model Comment {
+  id           String     @id @default(uuid())
+  discussionId String
+  discussion   Discussion @relation(fields: [discussionId], references: [id], onDelete: Cascade)
+  userId       String
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  text         String
+  createdAt    DateTime   @default(now())
+}
+
+model Like {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  cvId      String
+  createdAt DateTime @default(now())
+
+  @@unique([userId, cvId])
 }

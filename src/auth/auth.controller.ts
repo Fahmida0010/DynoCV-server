@@ -11,6 +11,20 @@ import { LoginDto } from './dto/login.dto';
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
+
+// নতুন এন্ডপয়েন্ট যা আমরা যুক্ত করছি
+  @Get('users/:email') // এর ফলে ফুল পাথ হবে: /api/auth/users/:email
+  async getUserByEmail(@Param('email') email: string) {
+    const user = await this.authService.findOneByEmail(email);
+    
+    if (!user) {
+      throw new NotFoundException('User not found in database');
+    }
+    
+    return user;
+  }
+
+
   @Post('register')
   @HttpCode(HttpStatus.CREATED)
   async register(@Body() registerDto: RegisterDto) {
@@ -44,7 +58,7 @@ async getUserByEmail(@Param('email') email: string) {
     
     
     const frontendUrl = process.env.CLIENT_URL || 'http://localhost:5173';
-      // return res.redirect(`${frontendUrl}/dashboard/profile`);
+      
 
       const userString = encodeURIComponent(JSON.stringify(result.user));
       return res.redirect(
@@ -67,7 +81,7 @@ async getUserByEmail(@Param('email') email: string) {
     const result = await this.authService.validateSocialUser(req.user);
     
     const frontendUrl = process.env.CLIENT_URL || 'http://localhost:5173';
-    // return res.redirect(`${frontendUrl}/dashboard/profile`);
+  
 
     const userString = encodeURIComponent(JSON.stringify(result.user));
     return res.redirect(
