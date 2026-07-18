@@ -1,4 +1,4 @@
-import { Controller, Post, Body, HttpCode, HttpStatus, Get, UseGuards, Req, Res, Request, Param } from '@nestjs/common';
+import { Controller, Post, Body, HttpCode, HttpStatus, Get, UseGuards, Req, Res, Request, Param, NotFoundException } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import type { Response } from 'express';
 import { AuthService } from './auth.service';
@@ -37,11 +37,6 @@ export class AuthController {
     return this.authService.login(loginDto);
   }
 
-
-@Get('users/:email')
-async getUserByEmail(@Param('email') email: string) {
-  return this.authService.getUserByEmail(email);
-}
 
   @Get('google')
   @UseGuards(AuthGuard('google'))

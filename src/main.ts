@@ -6,7 +6,7 @@ import passport from 'passport';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   
-  app.setGlobalPrefix('api');
+  app.setGlobalPrefix('api',{ exclude: ['/'] });
 
   // Frontend CORS configuration
   app.enableCors({

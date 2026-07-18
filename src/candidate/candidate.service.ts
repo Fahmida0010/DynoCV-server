@@ -60,7 +60,7 @@ export class CandidateService {
   }
 
   async getCvs(userId: string) {
-    return this.prisma.cv.findMany({
+    return this.prisma.cV.findMany({
       where: { userId, position: { isActive: true } }, // Automatic hide logic if position disabled
       include: { position: true }
     });
@@ -91,7 +91,7 @@ export class CandidateService {
       })
     };
 
-    return this.prisma.cv.upsert({
+    return this.prisma.cV.upsert({
       where: { userId_positionId: { userId, positionId } },
       create: { userId, positionId, content: cvSnapshot },
       update: { content: cvSnapshot, version: { increment: 1 } }
