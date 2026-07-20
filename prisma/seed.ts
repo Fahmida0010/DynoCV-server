@@ -2,6 +2,8 @@ import { PrismaClient } from '@prisma/client';
 import { attributes } from './data/attributes';
 import  {positions} from "./data/positions"
 import { cvContents } from './data/cvs';
+import { likesData } from './data/likesData';
+
 
 const prisma = new PrismaClient();
 
@@ -75,14 +77,25 @@ async function main() {
   }
   console.log('CV snapshots seeded successfully!');
 
+
+  // লাইকগুলো ডাটাবেজে পুশ করা হচ্ছে
+    const createdLikes = await prisma.like.createMany({
+      data: likesData,
+      skipDuplicates: true, // ডুপ্লিকেট লাইক হলে এরর না দিয়ে স্কিপ করবে
+    });
+
+    console.log(`${createdLikes.count} likes seeded successfully!`);
+  }
   console.log('All seed data inserted successfully! 🌱');
-}
+  
 
 main()
   .catch((e) => { 
     console.error(e); 
     process.exit(1); 
   })
+
+
   .finally(async () => { 
     await prisma.$disconnect(); 
   });

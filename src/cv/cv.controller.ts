@@ -1,7 +1,7 @@
 import { Controller, Get, Query } from '@nestjs/common';
 import { CvService } from './cv.service';
 
-@Controller('api/cvs')
+@Controller('candidate-cvs')
 export class CvController {
   constructor(private readonly cvService: CvService) {}
 

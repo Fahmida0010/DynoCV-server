@@ -36,33 +36,34 @@ model User {
 
   resetPasswordToken String?
 
-  isBlocked      Boolean      @default(false)
+  isBlocked Boolean @default(false)
 
   createdAt DateTime @default(now())
 
   updatedAt DateTime @updatedAt
-  version        Int          @default(1) // For optimistic locking
+  version   Int      @default(1) // For optimistic locking
 
   //relation
-  profile   Profile?
+  profile        Profile?
   projects       Project[]
   cvs            CV[]
   userAttributes UserAttribute[]
   discussions    Discussion[]
   comments       Comment[]
+  commentLikes   CommentLike[]
   likes          Like[]
 }
 
 model Profile {
-  id        String  @id @default(uuid())
-  userId    String  @unique
-  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id        String    @id @default(uuid())
+  userId    String    @unique
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   firstName String
   lastName  String
   location  String?
   photoUrl  String?
-  version   Int     @default(1) // Optimistic locking
-   updatedAt   DateTime? @updatedAt
+  version   Int       @default(1) // Optimistic locking
+  updatedAt DateTime? @updatedAt
 }
 
 model AttributeLibrary {
@@ -87,26 +88,26 @@ model UserAttribute {
 }
 
 model Project {
-  id          String   @id @default(uuid())
+  id          String    @id @default(uuid())
   userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   name        String
   startDate   DateTime
   endDate     DateTime?
   description String // Markdown supported text
   tags        String[] // Technology tags
-  version     Int      @default(1)
+  version     Int       @default(1)
 }
 
 model Position {
-  id           String          @id @default(uuid())
-  title        String
-  description  String
-  isActive     Boolean         @default(true)
-  version      Int             @default(1)
-  templates    TemplateField[]
-  cvs          CV[]
-  discussions  Discussion[]
+  id          String          @id @default(uuid())
+  title       String
+  description String
+  isActive    Boolean         @default(true)
+  version     Int             @default(1)
+  templates   TemplateField[]
+  cvs         CV[]
+  discussions Discussion[]
 }
 
 model TemplateField {
@@ -153,6 +154,25 @@ model Comment {
   user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
   text         String
   createdAt    DateTime   @default(now())
+
+  // Self-relation (Reply Functionality) এর জন্য নতুন ফিল্ডস
+  parentId String? // যদি কোনো কমেন্টের আন্ডারে রিপ্লাই হয়, তবে মেইন কমেন্টের ID
+  parent   Comment?  @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies  Comment[] @relation("CommentReplies")
+
+  // Likes Functionality এর জন্য নতুন ফিল্ড
+  likes CommentLike[]
+}
+
+model CommentLike {
+  id        String   @id @default(uuid())
+  commentId String
+  comment   Comment  @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, commentId])
 }
 
 model Like {
