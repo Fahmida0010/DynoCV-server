@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service'; 
-import { CreatePositionDto } from './positions.controller';
+import { CreatePositionDto } from './create-position.dto';
+
 
 @Injectable()
 export class PositionsService {
@@ -15,7 +16,7 @@ export class PositionsService {
       data: {
         title,
         description,
-        isActive: true, // ডিফল্টভাবে একটিভ থাকবে
+        isActive: true, 
         version: 1,
         // প্রিজমা নেস্টেড রাইটের মাধ্যমে টেমপ্লেট ফিল্ডে অ্যাট্রিবিউট কানেক্ট করা হচ্ছে
         templates: {

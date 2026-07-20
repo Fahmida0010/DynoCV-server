@@ -1,14 +1,8 @@
 import { Controller, Get, Delete, Post, Param, Put, Body } from '@nestjs/common';
 import { PositionsService } from './positions.service';
+import { CreatePositionDto } from './create-position.dto';
 
 
-
-
-export class CreatePositionDto {
-  title!: string;
-  description!: string;
-  attributeIds!: string[];
-}
 
 
 @Controller('positions')

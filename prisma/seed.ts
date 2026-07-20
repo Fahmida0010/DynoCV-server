@@ -1,55 +1,11 @@
 import { PrismaClient } from '@prisma/client';
+import { attributes } from './data/attributes';
+import  {positions} from "./data/positions"
+import { cvContents } from './data/cvs';
+
 const prisma = new PrismaClient();
 
 async function main() {
-  // ১. Positions Data Array
-  const positions = [
-    { "title": "Full-Stack Web Engineer", "description": "Responsible for building end-to-end web applications.", "isActive": true },
-    { "title": "Frontend Developer (React)", "description": "Focuses on building rich UI using React and TypeScript.", "isActive": false },
-    { "title": "Backend Engineer (NestJS)", "description": "Designing scalable APIs and database architectures.", "isActive": true },
-    { "title": "DevOps Specialist", "description": "Managing AWS infrastructure and CI/CD pipelines.", "isActive": true },
-    { "title": "Mobile App Developer (Flutter)", "description": "Building cross-platform mobile apps for iOS and Android.", "isActive": false },
-    { "title": "UI/UX Designer", "description": "Creating wireframes, prototypes, and user interfaces.", "isActive": true },
-    { "title": "QA Automation Engineer", "description": "Writing automation test suites using Cypress and Playwright.", "isActive": true },
-    { "title": "Data Scientist", "description": "Building machine learning models and data pipelines.", "isActive": false },
-    { "title": "Product Manager", "description": "Defining product roadmap and coordinating features.", "isActive": true },
-    { "title": "Cybersecurity Analyst", "description": "Ensuring application security and compliance.", "isActive": true },
-    { "title": "Cloud Architect", "description": "Designing enterprise-grade cloud solutions.", "isActive": false },
-    { "title": "Solutions Engineer", "description": "Bridging technical teams and enterprise clients.", "isActive": true },
-    { "title": "Database Administrator", "description": "Optimizing PostgreSQL databases and queries.", "isActive": true },
-    { "title": "Technical Writer", "description": "Documenting APIs, architectures, and user guides.", "isActive": false },
-    { "title": "Scrum Master", "description": "Facilitating agile methodologies and team sprints.", "isActive": true },
-    { "title": "AI/ML Engineer", "description": "Fine-tuning LLMs and integration with applications.", "isActive": true },
-    { "title": "Blockchain Developer", "description": "Developing smart contracts and Web3 apps.", "isActive": false },
-    { "title": "Site Reliability Engineer (SRE)", "description": "Ensuring high availability of production services.", "isActive": true },
-    { "title": "SEO Specialist", "description": "Optimizing web platforms for search engine visibility.", "isActive": true },
-    { "title": "Systems Administrator", "description": "Managing internal network and server hardware.", "isActive": false }
-  ];
-
-  // ২. Attributes Data Array
-  const attributes = [
-    { label: "Full Name", type: "TEXT", isBuiltIn: true },
-    { label: "Email Address", type: "TEXT", isBuiltIn: true },
-    { label: "Phone Number", type: "TEXT", isBuiltIn: true },
-    { label: "Profile Photo", type: "TEXT", isBuiltIn: true },
-    { label: "GitHub Profile URL", type: "TEXT", isBuiltIn: false },
-    { label: "LinkedIn Profile URL", type: "TEXT", isBuiltIn: false },
-    { label: "Portfolio Website", type: "TEXT", isBuiltIn: false },
-    { label: "Years of Experience", type: "NUMBER", isBuiltIn: false },
-    { label: "Expected Salary (BDT)", type: "NUMBER", isBuiltIn: false },
-    { label: "Current CTC (BDT)", type: "NUMBER", isBuiltIn: false },
-    { label: "Notice Period (Days)", type: "NUMBER", isBuiltIn: false },
-    { label: "IELTS Band Score", type: "NUMBER", isBuiltIn: false },
-    { label: "Remote Work Availability", type: "BOOLEAN", isBuiltIn: false },
-    { label: "Relocation Availability", type: "BOOLEAN", isBuiltIn: false },
-    { label: "Has Driving License", type: "BOOLEAN", isBuiltIn: false },
-    { label: "Highest Degree Obtained", type: "TEXT", isBuiltIn: false },
-    { label: "Primary Tech Stack", type: "TEXT", isBuiltIn: false },
-    { label: "Certifications (e.g. AWS, PMP)", type: "TEXT", isBuiltIn: false },
-    { label: "Present Address", type: "TEXT", isBuiltIn: false },
-    { label: "Permanent Address", type: "TEXT", isBuiltIn: false }
-  ];
-
   // ৩. Attribute Library Seeding (Using upsert to prevent duplicates)
   console.log('Seeding attribute library...');
   for (const attr of attributes) {
@@ -64,8 +20,6 @@ async function main() {
   // ৪. Positions Seeding
   console.log('Seeding positions...');
   for (const pos of positions) {
-    // পজিশন টেবিলে ইউনিক কনস্ট্রেইন্ট না থাকলে সরাসরি ক্রিয়েট করা নিরাপদ, 
-    // তবে বার বার সিড রান করলে ডুপ্লিকেট এড়াতে আমরা এখানে একটি ফাইন্ড চেক রাখতে পারি।
     const existingPosition = await prisma.position.findFirst({
       where: { title: pos.title }
     });
@@ -82,6 +36,45 @@ async function main() {
     }
   }
   console.log('Positions seeded successfully!');
+
+  // ৫. CV Seeding (২০টি ডাইনামিক CV কন্টেন্ট আপনার নির্দিষ্ট ইউজারের জন্য)
+  console.log('Seeding CV snapshots...');
+  const targetUserId = 'cmr9pe5lg0000tapojbmu5b5f'; // আপনার ক্যান্ডিডেট ইউজার আইডি
+
+  // ডাটাবেজে সদ্য তৈরি হওয়া বা আগে থেকে থাকা পজিশনগুলোর আইডি ম্যাপ করে নেওয়া
+  const dbPositions = await prisma.position.findMany({ where: { isActive: true } });
+
+  for (let i = 0; i < cvContents.length; i++) {
+    const item = cvContents[i];
+    
+    // positions.ts ফাইলের ইনডেক্স অনুযায়ী ডাটাবেজের পজিশন ম্যাচ করানো
+    const matchedPosition = dbPositions[item.posIndex];
+
+    if (matchedPosition) {
+      try {
+        await prisma.cV.upsert({
+          where: {
+            userId_positionId: {
+              userId: targetUserId,
+              positionId: matchedPosition.id,
+            },
+          },
+          update: {
+            content: item.content,
+          },
+          create: {
+            userId: targetUserId,
+            positionId: matchedPosition.id,
+            content: item.content,
+          },
+        });
+      } catch (error) {
+        console.error(`Error seeding CV at index ${i}:`, error);
+      }
+    }
+  }
+  console.log('CV snapshots seeded successfully!');
+
   console.log('All seed data inserted successfully! 🌱');
 }
 
