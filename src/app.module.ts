@@ -11,6 +11,11 @@ import { AttributesService } from './attributes/attributes.service';
 import { CvController } from './cv/cv.controller';
 import { CvService } from './cv/cv.service';
 import { CvModule } from './cv/cv.module';
+import { CommentsController } from './comments/comments.controller';
+import { CommentsService } from './comments/comments.service';
+import { CommentsModule } from './comments/comments.module';
+import { CandidateController } from './candidate/candidate.controller';
+import { CandidateService } from './candidate/candidate.service';
 
 
 @Module({
@@ -18,10 +23,10 @@ import { CvModule } from './cv/cv.module';
   imports: [
 
     ConfigModule.forRoot({ isGlobal: true }),
-    PrismaModule, AuthModule,CvModule], 
+    PrismaModule, AuthModule,CvModule ,CommentsModule], 
 
     
-  controllers: [AppController, PositionsController,AttributesController, CvController],
-  providers: [AppService,PositionsService,AttributesService ,CvService],
+  controllers: [AppController, PositionsController,AttributesController, CvController, CommentsController,CandidateController],
+  providers: [AppService,PositionsService,AttributesService ,CvService,CommentsService, CandidateService],
 })
 export class AppModule {}

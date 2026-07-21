@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common'; 
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common'; 
 import { CreateCommentDto } from './comments.dto';
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -7,22 +7,40 @@ import { PrismaService } from '../prisma/prisma.service';
 export class CommentsService {
   constructor(private prisma: PrismaService) {}
 
-  // নতুন কমেন্ট বা রিপ্লাই ক্রিয়েট করা
-  async create(userId: string, dto: CreateCommentDto) {
-    return this.prisma.comment.create({
+ // comments.service.ts
+async create(userId: string, dto: CreateCommentDto) {
+  let discussionId = dto.discussionId;
+
+  // যদি discussionId না থাকে, তার মানে এটা এই টেমপ্লেটের প্রথম আলোচনা/কমেন্ট
+  if (!discussionId && dto.positionId) {
+    const newDiscussion = await this.prisma.discussion.create({
       data: {
-        text: dto.text,
-        discussionId: dto.discussionId,
+        positionId: dto.positionId,
         userId: userId,
-        parentId: dto.parentId || null, 
+        title: `Discussion for Position ${dto.positionId}`, // একটি ডিফল্ট টাইটেল
+        content: dto.text, // প্রথম কমেন্টের টেক্সটই মেইন কন্টেন্ট
       },
-      include: {
-        user: {
-          select: { id: true, firstName: true, lastName: true, role: true, photo: true }
-        }
-      }
     });
+    discussionId = newDiscussion.id;
   }
+
+  if (!discussionId) {
+    throw new BadRequestException('Either discussionId or positionId must be provided');
+  }
+
+  // এবার কমেন্ট সেভ করুন
+  return this.prisma.comment.create({
+    data: {
+      text: dto.text,
+      discussionId: discussionId,
+      userId: userId,
+      parentId: dto.parentId || null,
+    },
+    include: {
+      user: { select: { id: true, firstName: true, lastName: true, role: true } }
+    }
+  });
+}
 
   // একটি ডিসকাশনের সব কমেন্ট ও নেস্টেড রিপ্লাই তুলে আনা
   async findAllByDiscussion(discussionId: string) {

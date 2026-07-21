@@ -3,12 +3,12 @@ import { attributes } from './data/attributes';
 import  {positions} from "./data/positions"
 import { cvContents } from './data/cvs';
 import { likesData } from './data/likesData';
+import { userAttributes } from './data/userAttributes';
 
 
 const prisma = new PrismaClient();
 
 async function main() {
-  // ৩. Attribute Library Seeding (Using upsert to prevent duplicates)
   console.log('Seeding attribute library...');
   for (const attr of attributes) {
     await prisma.attributeLibrary.upsert({
@@ -39,17 +39,17 @@ async function main() {
   }
   console.log('Positions seeded successfully!');
 
-  // ৫. CV Seeding (২০টি ডাইনামিক CV কন্টেন্ট আপনার নির্দিষ্ট ইউজারের জন্য)
+  // ৫. CV Seeding 
   console.log('Seeding CV snapshots...');
-  const targetUserId = 'cmr9pe5lg0000tapojbmu5b5f'; // আপনার ক্যান্ডিডেট ইউজার আইডি
+  const targetUserId = 'cmr9pe5lg0000tapojbmu5b5f'; 
 
-  // ডাটাবেজে সদ্য তৈরি হওয়া বা আগে থেকে থাকা পজিশনগুলোর আইডি ম্যাপ করে নেওয়া
+  
   const dbPositions = await prisma.position.findMany({ where: { isActive: true } });
 
   for (let i = 0; i < cvContents.length; i++) {
     const item = cvContents[i];
     
-    // positions.ts ফাইলের ইনডেক্স অনুযায়ী ডাটাবেজের পজিশন ম্যাচ করানো
+    
     const matchedPosition = dbPositions[item.posIndex];
 
     if (matchedPosition) {
@@ -78,12 +78,45 @@ async function main() {
   console.log('CV snapshots seeded successfully!');
 
 
-  // লাইকগুলো ডাটাবেজে পুশ করা হচ্ছে
     const createdLikes = await prisma.like.createMany({
       data: likesData,
-      skipDuplicates: true, // ডুপ্লিকেট লাইক হলে এরর না দিয়ে স্কিপ করবে
+      skipDuplicates: true, 
     });
 
+   
+ //user attrinutes
+  console.log('Seeding User Attributes...');
+  const dbAttributes = await prisma.attributeLibrary.findMany();
+
+  for (const mockAttr of userAttributes) {
+    // mockAttr.label এর চেকটি বাদ দিয়ে শুধু আইডি ম্যাচ করানো হলো
+    const matchedLibraryAttr = dbAttributes.find(
+      (dbAttr) => dbAttr.id === mockAttr.attributeId
+    );
+
+    if (matchedLibraryAttr) {
+      try {
+        await prisma.userAttribute.upsert({
+          where: {
+            userId_attributeId: {
+              userId: targetUserId,
+              attributeId: matchedLibraryAttr.id,
+            },
+          },
+          update: { value: mockAttr.value },
+          create: {
+            userId: targetUserId,
+            attributeId: matchedLibraryAttr.id,
+            value: mockAttr.value,
+            version: 1,
+          },
+        });
+      } catch (error) {
+        console.error(`Error seeding UserAttribute:`, error);
+      }
+    }
+  }
+  console.log('User Attributes seeded successfully!');
     console.log(`${createdLikes.count} likes seeded successfully!`);
   }
   console.log('All seed data inserted successfully! 🌱');

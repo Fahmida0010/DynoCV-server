@@ -6,10 +6,9 @@ import { CommentsService } from './comments.service';
 export class CommentsController {
   constructor(private readonly commentsService: CommentsService) {}
 
-  // ১. নতুন কমেন্ট বা রিপ্লাই তৈরি করা
+  
   @Post()
   async createComment(@Req() req: any, @Body() dto: CreateCommentDto) {
-    // এখানে আপনার Auth Guard থেকে ইউজার আইডি আসবে (আপাতত মক হিসেবে req.user.id ধরা হয়েছে)
     const userId = req.user?.id || "mock-user-id"; 
     return this.commentsService.create(userId, dto);
   }

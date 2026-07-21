@@ -2,8 +2,12 @@ import { IsNotEmpty, IsString, IsOptional } from 'class-validator';
 
 export class CreateCommentDto {
   @IsString()
-  @IsNotEmpty()
-  discussionId: string;
+  @IsOptional() 
+  discussionId?: string;
+
+  @IsString()
+  @IsOptional() 
+  positionId?: string;
 
   @IsString()
   @IsNotEmpty()
@@ -11,5 +15,5 @@ export class CreateCommentDto {
 
   @IsString()
   @IsOptional()
-  parentId?: string; 
+  parentId?: string;
 }
