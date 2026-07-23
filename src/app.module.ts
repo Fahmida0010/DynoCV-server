@@ -16,6 +16,9 @@ import { CommentsService } from './comments/comments.service';
 import { CommentsModule } from './comments/comments.module';
 import { CandidateController } from './candidate/candidate.controller';
 import { CandidateService } from './candidate/candidate.service';
+import { ProfileController } from './profile/profile.controller';
+import { ProfileService } from './profile/profile.service';
+import { ProfileModule } from './profile/profile.module';
 
 
 @Module({
@@ -23,10 +26,12 @@ import { CandidateService } from './candidate/candidate.service';
   imports: [
 
     ConfigModule.forRoot({ isGlobal: true }),
-    PrismaModule, AuthModule,CvModule ,CommentsModule], 
+    PrismaModule, AuthModule, CvModule, CommentsModule, ProfileModule],
 
-    
-  controllers: [AppController, PositionsController,AttributesController, CvController, CommentsController,CandidateController],
-  providers: [AppService,PositionsService,AttributesService ,CvService,CommentsService, CandidateService],
+
+  controllers: [AppController, PositionsController, AttributesController, CvController, CommentsController,
+    CandidateController, ProfileController],
+  providers: [AppService, PositionsService, AttributesService, CvService, CommentsService, CandidateService,
+    ProfileService],
 })
-export class AppModule {}
+export class AppModule { }

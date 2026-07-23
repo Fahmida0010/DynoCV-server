@@ -1,128 +1,91 @@
-import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
+import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import { PrismaService } from '../prisma/prisma.service'; // আপনার প্রিসমা সার্ভিসের পাথ
+import { CreateCvDto } from './dto/create-cv.dto';
+import { UpdateCvDto } from './dto/update-cv.dto';
 
 @Injectable()
 export class CvService {
   constructor(private prisma: PrismaService) {}
 
-  async findAll(search?: string, positionId?: string) {
-    const where: any = {};
-
-    if (positionId && positionId !== 'All Positions') {
-      where.positionId = positionId;
-    }
-
-    if (search) {
-      where.OR = [
-        { user: { firstName: { contains: search, mode: 'insensitive' } } },
-        { user: { lastName: { contains: search, mode: 'insensitive' } } },
-        { position: { title: { contains: search, mode: 'insensitive' } } },
-        { content: { path: ['skills'], string_contains: search } } 
-      ];
-    }
-
-    const cvs = await this.prisma.cV.findMany({
-      where,
-      include: {
-        user: { select: { firstName: true, lastName: true } },
-        position: { select: { id: true, title: true } },
+  // ১. নতুন CV তৈরি করা (Unique constraint: userId + positionId)
+  async create(userId: string, createCvDto: CreateCvDto) {
+    const existingCv = await this.prisma.cV.findUnique({
+      where: {
+        userId_positionId: {
+          userId,
+          positionId: createCvDto.positionId,
+        },
       },
     });
 
-    return Promise.all(
-      cvs.map(async (cv) => {
-        const likesCount = await this.prisma.like.count({
-          where: { cvId: cv.id },
-        });
+    if (existingCv) {
+      throw new ConflictException('You already have a CV tailored for this position.');
+    }
 
-        const cvContent = (cv.content as any) || {};
-        const positionTitle = cv.position.title.toLowerCase();
-
-        // =========================================================
-        // সবগুলা অ্যাট্রিবিউটের জন্য পজিশন ভিত্তিক ডাইনামিক কন্ডিশন
-        // =========================================================
-        let criteria: { label: string; validate: (val: any) => boolean }[] = [];
-
-        // ১. Built-in বেসিক ইনফো চেক (সব পজিশনের জন্যই এগুলো থাকা বাধ্যতামূলক)
-        criteria.push(
-          { label: "Full Name", validate: (val) => typeof val === 'string' && val.trim().length > 0 },
-          { label: "Email Address", validate: (val) => typeof val === 'string' && val.includes('@') },
-          { label: "Phone Number", validate: (val) => typeof val === 'string' && val.trim().length > 5 },
-          { label: "Profile Photo", validate: (val) => typeof val === 'string' && val.startsWith('http') }
-        );
-
-        // ২. পজিশন স্পেসিফিক রিকোয়ারমেন্ট (Front-End / Full-Stack / Back-End)
-        if (positionTitle.includes('react') || positionTitle.includes('front') || positionTitle.includes('full')) {
-          criteria.push(
-            { label: "Primary Tech Stack", validate: (val) => typeof val === 'string' && (val.toLowerCase().includes('react') || val.toLowerCase().includes('mern') || val.toLowerCase().includes('next')) },
-            { label: "Years of Experience", validate: (val) => Number(val) >= 2 }, // ২+ বছর অভিজ্ঞতা
-            { label: "Remote Work Availability", validate: (val) => val === true || String(val).toLowerCase() === 'true' }, // রিমোট অ্যাভেইলেবিলিটি
-            { label: "Expected Salary (BDT)", validate: (val) => Number(val) <= 120000 }, // বাজেট রেঞ্জ max ১,২০,০০০
-            { label: "Notice Period (Days)", validate: (val) => Number(val) <= 30 }, // ৩০ দিনের মধ্যে জয়েন করতে পারবে
-            { label: "Highest Degree Obtained", validate: (val) => typeof val === 'string' && (val.toLowerCase().includes('bsc') || val.toLowerCase().includes('cse') || val.toLowerCase().includes('bachelor')) }
-          );
-        } else if (positionTitle.includes('node') || positionTitle.includes('back')) {
-          criteria.push(
-            { label: "Primary Tech Stack", validate: (val) => typeof val === 'string' && (val.toLowerCase().includes('node') || val.toLowerCase().includes('backend') || val.toLowerCase().includes('express') || val.toLowerCase().includes('prisma')) },
-            { label: "Years of Experience", validate: (val) => Number(val) >= 3 }, // ব্যাকএন্ডে ৩+ বছর লাগবে
-            { label: "Expected Salary (BDT)", validate: (val) => Number(val) <= 150000 },
-            { label: "Notice Period (Days)", validate: (val) => Number(val) <= 15 } // আরজেন্ট জয়েনিং ১৫ দিন
-          );
-        } else {
-          // অন্য যেকোনো সাধারণ পজিশনের জন্য জেনেরিক কন্ডিশন
-          criteria.push(
-            { label: "Years of Experience", validate: (val) => Number(val) >= 1 },
-            { label: "Primary Tech Stack", validate: (val) => typeof val === 'string' && val.trim().length > 0 }
-          );
-        }
-
-        // ৩. গ্লোবাল বা কমন অপশনাল অ্যাট্রিবিউট চেক (সব পজিশনের সিভিতে ডেটা থাকলে স্কোর বাড়বে)
-        criteria.push(
-          { label: "GitHub Profile URL", validate: (val) => typeof val === 'string' && val.includes('github.com') },
-          { label: "LinkedIn Profile URL", validate: (val) => typeof val === 'string' && val.includes('linkedin.com') },
-          { label: "Portfolio Website", validate: (val) => typeof val === 'string' && val.startsWith('http') },
-          { label: "IELTS Band Score", validate: (val) => Number(val) >= 6.5 }, // গ্লোবাল ক্লায়েন্টদের জন্য ন্যূনতম ৬.৫ স্কোর
-          { label: "Relocation Availability", validate: (val) => val === true || String(val).toLowerCase() === 'true' },
-          { label: "Present Address", validate: (val) => typeof val === 'string' && val.trim().length > 0 },
-          { label: "Permanent Address", validate: (val) => typeof val === 'string' && val.trim().length > 0 }
-        );
-
-        // =========================================================
-        // ম্যাচ কাউন্ট এবং পার্সেন্টেজ হিসাব
-        // =========================================================
-        let matchedCount = 0;
-
-        criteria.forEach(criterion => {
-          const candidateValue = cvContent[criterion.label];
-          // ভ্যালু যদি এক্সিস্ট করে এবং কন্ডিশন স্যাটিসফাই করে
-          if (candidateValue !== undefined && candidateValue !== null && criterion.validate(candidateValue)) {
-            matchedCount++;
-          }
-        });
-
-        // পার্সেন্টেজ বের করা (যত বেশি ক্রাইটেরিয়া ম্যাচ করবে, পার্সেন্টেজ তত স্মুথলি বাড়বে)
-        let matchScore = '0%';
-        if (criteria.length > 0) {
-          const scorePercentage = Math.round((matchedCount / criteria.length) * 100);
-          matchScore = `${Math.min(scorePercentage, 100)}%`;
-        }
-
-        return {
-          id: cv.id,
-          candidateName: `${cv.user.firstName} ${cv.user.lastName}`,
-          positionApplied: cv.position.title,
-          positionId: cv.position.id,
-          matchScore: matchScore, 
-          likes: likesCount,
-        };
-      }),
-    );
+    return this.prisma.cV.create({
+      data: {
+        userId,
+        positionId: createCvDto.positionId,
+        content: createCvDto.content,
+      },
+      include: {
+        position: true, // ফ্রন্টএন্ডের জন্য পজিশন ডেটা যুক্ত করা হলো
+      },
+    });
   }
 
-  async getPositions() {
-    return this.prisma.position.findMany({
-      where: { isActive: true },
-      select: { id: true, title: true },
+  // ২. লগইন করা ইউজারের সব CV গেট করা (যা ফ্রন্টএন্ডে টেবিলে ম্যাপ হবে)
+  async findAllByUser(userId: string) {
+    return this.prisma.cV.findMany({
+      where: { userId },
+      include: {
+        position: true,
+      },
+      orderBy: {
+        updatedAt: 'desc',
+      },
+    });
+  }
+
+  // ৩. নির্দিষ্ট একটি CV আইডি দিয়ে ডিটেইলস গেট করা
+  async findOne(id: string, userId: string) {
+    const cv = await this.prisma.cV.findFirst({
+      where: { id, userId },
+      include: {
+        position: true,
+      },
+    });
+
+    if (!cv) {
+      throw new NotFoundException(`CV with ID ${id} not found.`);
+    }
+    return cv;
+  }
+
+  // ৪. CV আপডেট করা (Optimistic Locking / version কন্ট্রোল সহ)
+  async update(id: string, userId: string, updateCvDto: UpdateCvDto) {
+    const cv = await this.findOne(id, userId);
+
+    return this.prisma.cV.update({
+      where: { id },
+      data: {
+        ...updateCvDto,
+        version: {
+          increment: 1, // প্রতি আপডেটে ভার্সন অটো ১ বাড়বে v1 -> v2
+        },
+      },
+      include: {
+        position: true,
+      },
+    });
+  }
+
+  // ৫. CV ডিলিট করা
+  async remove(id: string, userId: string) {
+    await this.findOne(id, userId); // আগে চেক করা CV-টি ওই ইউজারের কি না
+
+    return this.prisma.cV.delete({
+      where: { id },
     });
   }
 }
