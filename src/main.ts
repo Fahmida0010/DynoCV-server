@@ -10,7 +10,7 @@ async function bootstrap() {
 
   // Frontend CORS configuration
   app.enableCors({
-    origin: process.env.CLIENT_URL, 
+    origin: process.env.CLIENT_URL || "https://dyno-cv-client.vercel.app" , 
     credentials: true,
   });
   

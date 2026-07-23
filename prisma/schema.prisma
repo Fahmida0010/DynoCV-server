@@ -118,7 +118,7 @@ model TemplateField {
   attribute   AttributeLibrary @relation(fields: [attributeId], references: [id], onDelete: Cascade)
 
   @@unique([positionId, attributeId])
-}
+  }
 
 model CV {
   id         String   @id @default(uuid())
