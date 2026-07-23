@@ -9,7 +9,7 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
 
       clientID: process.env.GOOGLE_CLIENT_ID || '',
       clientSecret: process.env.GOOGLE_CLIENT_SECRET || '',
-      callbackURL: `${process.env.BACKEND_URL || 'http://localhost:5000'}/api/auth/google/callback`,
+      callbackURL: `${process.env.BACKEND_URL}/api/auth/google/callback`,
       scope: ['email', 'profile'],
     });
   }
@@ -17,7 +17,7 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
   async validate(accessToken: string, refreshToken: string, profile: any, done: VerifyCallback): Promise<any> {
     const { name, emails, photos, _json } = profile;
     
-    // সরাসরি name অবজেক্টে ডেটা না থাকলে গুগলের কাঁচা (_json) ডেটা থেকে ব্যাকআপ নেবে
+  
     const firstName = name?.givenName || _json?.given_name || '';
     const lastName = name?.familyName || _json?.family_name || '';
 
