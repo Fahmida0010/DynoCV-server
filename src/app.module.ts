@@ -19,6 +19,12 @@ import { CandidateService } from './candidate/candidate.service';
 import { ProfileController } from './profile/profile.controller';
 import { ProfileService } from './profile/profile.service';
 import { ProfileModule } from './profile/profile.module';
+import { CvManagementController } from './cv-management/cv-management.controller';
+import { CvManagementService } from './cv-management/cv-management.service';
+import { StatsController } from './stats/stats.controller';
+import { StatsService } from './stats/stats.service';
+import { UserController } from './user/user.controller';
+import { UserService } from './user/user.service';
 
 
 @Module({
@@ -30,8 +36,8 @@ import { ProfileModule } from './profile/profile.module';
 
 
   controllers: [AppController, PositionsController, AttributesController, CvController, CommentsController,
-    CandidateController, ProfileController],
+    CandidateController, ProfileController, CvManagementController ,StatsController, UserController],
   providers: [AppService, PositionsService, AttributesService, CvService, CommentsService, CandidateService,
-    ProfileService],
+    ProfileService, CvManagementService, StatsService, UserService],
 })
 export class AppModule { }
